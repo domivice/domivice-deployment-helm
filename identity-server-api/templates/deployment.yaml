@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity-server-api-deployment
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: identity-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: identity-server
+  template:
+    metadata:
+      labels:
+        app: identity-server
+    spec:
+      initContainers:
+      - name: identity-server-migration
+        image: nelsonkana/identityprovider.migration:latest
+        command: ['/bin/bash', '-c', '/opt/mssql-tools/bin/sqlcmd -S identity-server-db-service -U sa -P $$MSSQL_SA_PASSWORD -i /sql/InitialMigration.sql; wait;']
+        env:
+        - name: MSSQL_DATABASE
+          value: DomiviceIdentity
+        - name: MSSQL_SA_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: identity-server-api-secret
+              key: MSSQL_SA_PASSWORD
+      containers:
+      - name: identity-server
+        image: nelsonkana/identityprovider.api:latest
+        ports:
+        - containerPort: 5001
+        env:
+        - name: ConnectionStrings__DefaultConnection
+          valueFrom:
+            secretKeyRef:
+              name: identity-server-api-secret
+              key: IDENTITY_SERVER_DB_CS
+        - name: RabbitMq__Host 
+          value: amqp://guest:guest@rabbitmq:5672
+        - name: ASPNETCORE_URLS 
+          value: "http://+"
+        - name: ASPNETCORE_HTTPS_PORT 
+          value: "5001"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: identity-server-api-service
+  namespace: {{ .Values.namespace }}
+spec:
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 5001
+  selector:
+    app: identity-server

@@ -1,0 +1,2 @@
+namespace: domivice-prod
+storageClassName: hostpath
