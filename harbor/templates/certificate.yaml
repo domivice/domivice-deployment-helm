@@ -1,0 +1,25 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: core-harbor-domivice-dev-cert
+  namespace: domivice-harbor
+spec:
+  dnsNames:
+    - core.harbor.domivice.dev
+  secretName: core-harbor-domivice-dev-tls-secret
+  issuerRef:
+    name: domivice-cluster-issuer
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: notary-harbor-domivice-dev-cert
+  namespace: domivice-harbor
+spec:
+  dnsNames:
+    - notary.harbor.domivice.dev
+  secretName: notary-harbor-domivice-dev-tls-secret
+  issuerRef:
+    name: domivice-cluster-issuer
+    kind: ClusterIssuer
