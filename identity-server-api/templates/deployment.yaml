@@ -17,7 +17,7 @@ spec:
     spec:
       initContainers:
       - name: identity-server-migration
-        image: nelsonkana/identityprovider.migration:latest
+        image: core.harbor.domivice.dev/domivice/identityprovider.migration:1.0.0
         command: ['/bin/bash', '-c', '/opt/mssql-tools/bin/sqlcmd -S identity-server-db-service -U sa -P $$MSSQL_SA_PASSWORD -i /sql/InitialMigration.sql; wait;']
         env:
         - name: MSSQL_DATABASE
@@ -27,9 +27,11 @@ spec:
             secretKeyRef:
               name: identity-server-api-secret
               key: MSSQL_SA_PASSWORD
+      imagePullSecrets:
+      - name: harbor-regcred-secret
       containers:
       - name: identity-server
-        image: nelsonkana/identityprovider.api:latest
+        image: core.harbor.domivice.dev/domivice/identityprovider.api:1.0.0
         ports:
         - containerPort: 5001
         env:
@@ -44,6 +46,8 @@ spec:
           value: "http://+"
         - name: ASPNETCORE_HTTPS_PORT 
           value: "5001"
+      imagePullSecrets:
+      - name: harbor-regcred-secret
 ---
 apiVersion: v1
 kind: Service
