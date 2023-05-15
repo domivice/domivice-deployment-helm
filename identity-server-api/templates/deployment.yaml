@@ -31,7 +31,7 @@ spec:
       - name: harbor-regcred-secret
       containers:
       - name: identity-server
-        image: core.harbor.domivice.dev/domivice/identityprovider.api:1.0.0
+        image: core.harbor.domivice.dev/domivice/identityprovider.api:1.0.1
         ports:
         - containerPort: 5001
         env:
@@ -46,6 +46,8 @@ spec:
           value: "http://+"
         - name: ASPNETCORE_HTTPS_PORT 
           value: "5001"
+        - name: Loki 
+          value: "http://loki-stack.domivice-grafana-dev.svc.cluster.local:3100"
       imagePullSecrets:
       - name: harbor-regcred-secret
 ---
