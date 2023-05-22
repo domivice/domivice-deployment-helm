@@ -23,3 +23,29 @@ spec:
   issuerRef:
     name: domivice-cluster-issuer
     kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: alertmanager-domivice-dev-cert
+  namespace: domivice-grafana-dev
+spec:
+  dnsNames:
+    - alertmanager.domivice.dev
+  secretName: alertmanager-domivice-dev-tls-secret
+  issuerRef:
+    name: domivice-cluster-issuer
+    kind: ClusterIssuer  
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: prometheus-domivice-dev-cert
+  namespace: domivice-grafana-dev
+spec:
+  dnsNames:
+    - prometheus.domivice.dev
+  secretName: prometheus-domivice-dev-tls-secret
+  issuerRef:
+    name: domivice-cluster-issuer
+    kind: ClusterIssuer  

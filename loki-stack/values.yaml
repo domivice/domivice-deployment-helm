@@ -24,7 +24,7 @@ loki:
     enabled: true
     size: 1Gi
     storageClassName: hostpath
-    existingClaim: loki-persistent-volume-claim
+    # existingClaim: loki-persistent-volume-claim
   ingress:
     enabled: true
     ingressClassName: nginx
@@ -51,7 +51,33 @@ fluent-bit:
 
 grafana:
   enabled: true
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/default
+  dashboards: 
+    default:
+      grafana-overview:
+        file: dashboards/grafana-overview.json
+      prometheus:
+        file: dashboards/prometheus.json
+      pod-total:
+        file: dashboards/pod-total.json  
+      k8s-resources-pod:
+        file: dashboards/k8s-resources-pod.json   
+      rabbitmq-overview:
+        file: dashboards/rabbitmq-overview_rev12.json   
   sidecar:
+    dashboards:
+      enabled: true  
     datasources:
       label: ""
       labelValue: ""
@@ -84,13 +110,36 @@ prometheus:
     persistentVolume:
       size: 1Gi
       storageClass: hostpath
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - alertmanager.domivice.dev
+      tls: 
+      - secretName: alertmanager-domivice-dev-tls-secret
+        hosts:
+          - alertmanager.domivice.dev
   server:
     persistentVolume:
       size: 1Gi
       storageClass: hostpath
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - prometheus.domivice.dev
+      tls: 
+      - secretName: prometheus-domivice-dev-tls-secret
+        hosts:
+          - prometheus.domivice.dev
   nodeExporter:
     hostRootfs: false
-
+  extraScrapeConfigs: |
+    - job_name: 'identity-server'
+      scheme: http
+      static_configs:
+        - targets:
+          - identity-server-api-service.domivice-dev.svc.cluster.local:80
 filebeat:
   enabled: false
   filebeatConfig:

@@ -21,4 +21,4 @@ spec:
           service:
             name: identity-server-api-service
             port:
-              number: 80
+              number: 443

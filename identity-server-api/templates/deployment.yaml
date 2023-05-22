@@ -31,9 +31,10 @@ spec:
       - name: harbor-regcred-secret
       containers:
       - name: identity-server
-        image: core.harbor.domivice.dev/domivice/identityprovider.api:1.0.1
+        image: core.harbor.domivice.dev/domivice/identityprovider.api:1.0.7
         ports:
         - containerPort: 5001
+        - containerPort: 5000
         env:
         - name: ConnectionStrings__DefaultConnection
           valueFrom:
@@ -42,12 +43,9 @@ spec:
               key: IDENTITY_SERVER_DB_CS
         - name: RabbitMq__Host 
           value: amqp://guest:guest@rabbitmq:5672
-        - name: ASPNETCORE_URLS 
-          value: "http://+"
-        - name: ASPNETCORE_HTTPS_PORT 
-          value: "5001"
         - name: Loki 
-          value: "http://loki-stack.domivice-grafana-dev.svc.cluster.local:3100"
+          value: "http://loki-stack.domivice-grafana-dev.svc.cluster.local:3100"  
+          
       imagePullSecrets:
       - name: harbor-regcred-secret
 ---
@@ -56,10 +54,17 @@ kind: Service
 metadata:
   name: identity-server-api-service
   namespace: {{ .Values.namespace }}
+  annotations:
+    prometheus.io/scrape: "true"
 spec:
   ports:
   - protocol: TCP
+    name: non-ssl-port
     port: 80
+    targetPort: 5000
+  - protocol: TCP
+    name: ssl-port
+    port: 443
     targetPort: 5001
   selector:
     app: identity-server
