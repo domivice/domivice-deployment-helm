@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity-server-bff-deployment
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: identity-server-bff
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: identity-server-bff
+  template:
+    metadata:
+      labels:
+        app: identity-server-bff
+    spec:
+      containers:
+      - name: identity-server-bff
+        image: core.harbor.domivice.dev/domivice/identityprovider.bff:1.0.2
+        ports:
+        - containerPort: 5002
+        - containerPort: 5003
+        env:
+        - name: IdentityServer__Authority 
+          value: https://identity-server-api-service:443
+        - name: Loki 
+          value: "http://loki-stack.domivice-grafana-dev.svc.cluster.local:3100"  
+      imagePullSecrets:
+      - name: harbor-regcred-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: identity-server-bff-service
+  namespace: {{ .Values.namespace }}
+  annotations:
+    prometheus.io/scrape: "true"
+spec:
+  ports:
+  - protocol: TCP
+    name: non-ssl-port
+    port: 80
+    targetPort: 5002
+  - protocol: TCP
+    name: ssl-port
+    port: 443
+    targetPort: 5003
+  selector:
+    app: identity-server-bff

@@ -31,10 +31,10 @@ spec:
       - name: harbor-regcred-secret
       containers:
       - name: identity-server
-        image: core.harbor.domivice.dev/domivice/identityprovider.api:1.0.7
+        image: core.harbor.domivice.dev/domivice/identityprovider.api:1.0.14
         ports:
-        - containerPort: 5001
-        - containerPort: 5000
+        - containerPort: 5007
+        - containerPort: 5006
         env:
         - name: ConnectionStrings__DefaultConnection
           valueFrom:
@@ -61,10 +61,10 @@ spec:
   - protocol: TCP
     name: non-ssl-port
     port: 80
-    targetPort: 5000
+    targetPort: 5006
   - protocol: TCP
     name: ssl-port
     port: 443
-    targetPort: 5001
+    targetPort: 5007
   selector:
     app: identity-server
