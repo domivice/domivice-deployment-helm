@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: identity-server-bff
-        image: core.harbor.domivice.dev/domivice/identityprovider.bff:1.0.2
+        image: core.harbor.domivice.dev/domivice/identityprovider.bff:1.0.3
         ports:
         - containerPort: 5002
         - containerPort: 5003
