@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-api-deployment
+  namespace: {{ .Values.global.defaultNamespace }}
+  labels:
+    app: users-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: users-api
+  template:
+    metadata:
+      labels:
+        app: users-api
+    spec:
+      initContainers:
+      - name: users-api-migration
+        image: {{ .Values.global.domiviceImageRegistry }}/{{ .Values.migrationImageRepository }}:{{ .Values.migrationImageTag }}
+        command: ['/bin/bash', '-c', '/opt/mssql-tools/bin/sqlcmd -S {{ .Values.global.dbServiceName }} -U sa -P $$MSSQL_SA_PASSWORD -i /sql/InitialMigration.sql; wait;']
+        env:
+        - name: MSSQL_DATABASE
+          value: DomiviceUsers
+        - name: MSSQL_SA_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secretName }}
+              key: MSSQL_SA_PASSWORD
+      imagePullSecrets:
+      - name: {{ .Values.global.defaultHarborImagePullSecret }}
+      containers:
+      - name: users-api
+        image: {{ .Values.global.domiviceImageRegistry }}/{{ .Values.apiImageRepository }}:{{ .Values.apiImageTag }}
+        ports:
+        - containerPort: 5004
+        - containerPort: 5005
+        env:
+        - name: ConnectionStrings__DefaultConnection
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secretName }}
+              key: USERS_DB_CS
+        - name: RabbitMq__Host 
+          value: amqp://{{ .Values.global.rabbitmqUsername }}:{{ .Values.global.rabbitmqPassword }}@{{ .Values.global.rabbitmqServiceName }}.{{ .Values.global.infraNamespace }}.svc.cluster.local:5672
+        - name: Loki 
+          value: http://{{ .Values.global.lokiServiceName }}.{{ .Values.global.infraNamespace }}.svc.cluster.local:3100 
+        - name: IdentityServer__Authority 
+          value: https://{{ .Values.global.identityServerHost }}  
+      imagePullSecrets:
+      - name: {{ .Values.global.defaultHarborImagePullSecret }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.serviceName }}
+  namespace: {{ .Values.global.defaultNamespace }}
+  annotations:
+    prometheus.io/scrape: "true"
+spec:
+  ports:
+  - protocol: TCP
+    name: non-ssl-port
+    port: 80
+    targetPort: 5004
+  - protocol: TCP
+    name: ssl-port
+    port: 443
+    targetPort: 5005
+  selector:
+    app: users-api

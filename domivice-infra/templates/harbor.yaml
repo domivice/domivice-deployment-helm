@@ -1,0 +1,25 @@
+{{ if .Capabilities.APIVersions.Has "cert-manager.io/v1" -}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: core-harbor-domivice-dev-cert
+spec:
+  dnsNames:
+    - {{ .Values.harbor.expose.ingress.hosts.core }}
+  secretName: {{ .Values.harbor.expose.tls.secret.secretName }}
+  issuerRef:
+    name: {{ index .Values "cert-manager" "clusterIssuer" }}
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: notary-harbor-domivice-dev-cert
+spec:
+  dnsNames:
+    - {{ .Values.harbor.expose.ingress.hosts.notary }}
+  secretName: {{ .Values.harbor.expose.tls.secret.notarySecretName }}
+  issuerRef:
+    name: {{ index .Values "cert-manager" "clusterIssuer" }}
+    kind: ClusterIssuer
+{{ end -}}    

@@ -1,0 +1,27 @@
+{{ if .Capabilities.APIVersions.Has "cert-manager.io/v1" -}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: domivice-loki-tls-cert
+  namespace: {{ .Release.Namespace }}
+spec:
+  dnsNames: 
+    - {{ index .Values "loki-stack" "loki" "ingress" "ingressHostName" }}
+  secretName: {{ index .Values "loki-stack" "loki" "ingress" "tlsSecretName" }}
+  issuerRef:
+    name: {{ index .Values "cert-manager" "clusterIssuer" }}
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: domivice-grafana-tls-cert
+  namespace: {{ .Release.Namespace }}
+spec:
+  dnsNames: 
+    - {{ index .Values "loki-stack" "grafana" "ingress" "ingressHostName" }}
+  secretName: {{ index .Values "loki-stack" "grafana" "ingress" "tlsSecretName" }}
+  issuerRef:
+    name: {{ index .Values "cert-manager" "clusterIssuer" }}
+    kind: ClusterIssuer
+{{ end -}}  

@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ template "domivice-test.name" . }}-db-statefulset
+  namespace: {{ .Values.global.defaultNamespace }}
+spec:
+  serviceName: {{ .Values.global.dbServiceName }}
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ template "domivice-test.name" . }}-db
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Delete # Retain
+    whenScaled: Delete
+  template:
+    metadata:
+      labels:
+        app: {{ template "domivice-test.name" . }}-db
+    spec:
+      terminationGracePeriodSeconds: 30
+      hostname: mssqlinst
+      securityContext:
+        fsGroup: 10001
+      containers:
+      - name: mssql
+        image: mcr.microsoft.com/azure-sql-edge
+        ports:
+        - containerPort: {{ .Values.containerPort }}
+        env:
+        - name: ACCEPT_EULA
+          value: "Y"
+        - name: SA_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secretName }}
+              key: MSSQL_SA_PASSWORD
+        - name: MSSQL_PID
+          value: "Developer"
+        volumeMounts:
+        - name: data
+          mountPath: /var/opt/mssql
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+          ephemeral-storage: 2Gi
+        limits:
+          ephemeral-storage: 4Gi
+      storageClassName: {{ .Values.global.storageClass }} # default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.global.dbServiceName }}
+  namespace: {{ .Values.global.defaultNamespace }}
+spec:
+  selector:
+    app: {{ template "domivice-test.name" . }}-db
+  ports:
+  - protocol: TCP
+    port: {{ .Values.containerPort }}
+    targetPort: {{ .Values.containerPort }}

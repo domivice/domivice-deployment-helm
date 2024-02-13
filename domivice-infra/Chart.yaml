@@ -1,0 +1,79 @@
+apiVersion: v2
+name: domivice-infra
+description: A Helm chart for Kubernetes
+
+# A chart can be either an 'application' or a 'library' chart.
+#
+# Application charts are a collection of templates that can be packaged into versioned archives
+# to be deployed.
+#
+# Library charts provide useful utilities or functions for the chart developer. They're included as
+# a dependency of application charts to inject those utilities and functions into the rendering
+# pipeline. Library charts do not define any templates and therefore cannot be deployed.
+type: application
+
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+# Versions are expected to follow Semantic Versioning (https://semver.org/)
+version: 0.1.0
+
+# This is the version number of the application being deployed. This version number should be
+# incremented each time you make changes to the application. Versions are not expected to
+# follow Semantic Versioning. They should reflect the version the application is using.
+# It is recommended to use it with quotes.
+appVersion: "1.16.0"
+
+dependencies:
+# helm repo add cert-manager https://charts.jetstack.io
+# helm fetch cert-manager/cert-manager --untar
+  - name: cert-manager
+    version: "1.12.2"
+    repository: "file://charts/cert-manager"
+    condition: cert-manager.enabled
+  - name: namespaces
+    version: "0.1.0"
+    repository: "file://charts/namespaces"
+    condition: namespaces.enabled
+# helm repo add harbor https://helm.goharbor.io
+# helm fetch harbor/harbor --untar
+  - name: harbor
+    version: "1.12.1"
+    repository: "file://charts/harbor"
+    condition: harbor.enabled
+# helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+# helm fetch ingress-nginx/ingress-nginx --untar
+  - name: ingress-nginx
+    version: "4.6.1"
+    repository: "file://charts/ingress-nginx"
+    condition: ingress-nginx.enabled    
+# helm repo add bitnami https://charts.bitnami.com/bitnami
+# helm fetch bitnami/rabbitmq --untar
+  - name: rabbitmq
+    version: "12.0.7"
+    repository: "file://charts/rabbitmq"
+    condition: rabbitmq.enabled 
+# helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
+# helm fetch kubernetes-dashboard/kubernetes-dashboard --untar
+# kubectl -n domivice-infra create token admin-user
+  - name: kubernetes-dashboard
+    version: "7.0.3"
+    repository: "file://charts/kubernetes-dashboard"
+    condition: kubernetes-dashboard.enabled     
+# helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+# helm fetch prometheus-community/prometheus --untar
+  - name: prometheus
+    version: "23.1.0"
+    repository: "file://charts/prometheus"
+    condition: prometheus.enabled     
+# helm repo add grafana https://grafana.github.io/helm-charts
+# helm fetch grafana/loki-stack --untar
+  - name: loki-stack
+    version: "2.9.10"
+    repository: "file://charts/loki-stack"
+    condition: loki-stack.enabled 
+# helm repo add sonarqube https://SonarSource.github.io/helm-chart-sonarqube
+# helm fetch sonarqube/sonarqube --untar          
+  - name: sonarqube
+    version: "10.3.0"
+    repository: "file://charts/sonarqube"
+    condition: sonarqube.enabled 

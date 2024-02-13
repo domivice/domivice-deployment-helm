@@ -1,0 +1,25 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: axon-domivice-dashboard-cert
+  namespace: {{ .Values.global.defaultNamespace }}
+spec:
+  dnsNames:
+    - {{ .Values.ingress.dashboardHostName }}
+  secretName: {{ .Values.ingress.dashboardTlsSecretName }}
+  issuerRef:
+    name: {{ .Values.global.clusterIssuer }}
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: axon-domivice-server-cert
+  namespace: {{ .Values.global.defaultNamespace }}
+spec:
+  dnsNames:
+    - {{ .Values.ingress.serverHostName }}
+  secretName: {{ .Values.ingress.serverTlsSecretName }}
+  issuerRef:
+    name: {{ .Values.global.clusterIssuer }}
+    kind: ClusterIssuer    

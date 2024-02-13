@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.serviceName }}
+  namespace: {{ .Values.global.defaultNamespace }}
+spec:
+  ports:
+    - name: mongo
+      port: {{ .Values.mongoPort }}
+      targetPort: {{ .Values.mongoPort }}
+  clusterIP: None
+  selector:
+    app: mongo

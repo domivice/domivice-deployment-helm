@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: identity-server-ui-ingress
+  namespace: {{ .Values.global.defaultNamespace }}
+spec:
+  ingressClassName: {{ .Values.global.ingressClassName }}
+  tls:
+  - hosts:
+    - {{ .Values.global.uiHost }}
+    secretName: auth-domivice-dev-tls-secret
+  rules:
+  - host: {{ .Values.global.uiHost }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.serviceName }}
+            port:
+              number: 80

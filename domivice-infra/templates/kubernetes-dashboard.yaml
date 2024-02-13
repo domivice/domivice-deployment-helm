@@ -1,0 +1,31 @@
+{{ if .Capabilities.APIVersions.Has "cert-manager.io/v1" -}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: domivice-kubernetes-dashboard-cert
+spec:
+  dnsNames: {{ index .Values "kubernetes-dashboard" "app" "ingress" "hosts" | toYaml | nindent 2 }}
+  secretName: {{ index .Values "kubernetes-dashboard" "app" "ingress" "secretName" }}
+  issuerRef:
+    name: {{ index .Values "cert-manager" "clusterIssuer" }}
+    kind: ClusterIssuer
+---
+{{ end -}}    
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin-user
+  namespace: {{ .Values.global.defaultNamespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-user
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: admin-user
+  namespace: {{ .Values.global.defaultNamespace }}

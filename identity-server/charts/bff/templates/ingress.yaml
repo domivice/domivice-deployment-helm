@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: identity-server-bff-ingress
+  namespace: {{ .Values.global.defaultNamespace }}
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+spec:
+  ingressClassName: {{ .Values.global.ingressClassName }}
+  tls:
+  - hosts:
+    - {{ .Values.global.bffHost }}
+    secretName: bff-auth-domivice-dev-tls-secret
+  rules:
+  - host: {{ .Values.global.bffHost }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.serviceName }}
+            port:
+              number: 443

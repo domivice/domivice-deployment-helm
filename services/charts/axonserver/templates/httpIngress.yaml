@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: axonserver-http
+  namespace: {{ .Values.global.defaultNamespace }}
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/affinity: cookie
+    nginx.ingress.kubernetes.io/affinity-mode: persistent
+spec:
+  ingressClassName: {{ .Values.global.ingressClassName }}
+  tls:
+  - hosts:
+    - {{ .Values.ingress.dashboardHostName }}
+    secretName: {{ .Values.ingress.dashboardTlsSecretName }}
+  rules:
+  - host: {{ .Values.ingress.dashboardHostName }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: axonserver-gui
+            port:
+              number: 8024        

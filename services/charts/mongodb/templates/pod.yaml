@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mongo-init
+  namespace: {{ .Values.global.defaultNamespace }}
+spec:
+  containers:
+  - name: init-mongo
+    image: mongo:latest
+    lifecycle:
+      postStart:
+        exec:
+          command: ['bash', '/scripts/replSetInit.sh']
+    env:
+      - name: MONGO_INITDB_ROOT_USERNAME
+        valueFrom:
+          configMapKeyRef:
+            key: root_username
+            name: mongodb-conf-configmap
+      - name: DOMIVICE_SERVICES_USERNAME
+        valueFrom:
+          configMapKeyRef:
+            key: services_username
+            name: mongodb-conf-configmap                  
+      - name: MONGO_INITDB_ROOT_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            key: root_password
+            name: mongodb-password-secret
+      - name: DOMIVICE_SERVICES_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            key: services_password
+            name: mongodb-password-secret                  
+      - name: MONGO_INITDB_DATABASE
+        value: {{ .Values.initDatabase }}            
+    volumeMounts:
+    - name: repset-init-volume
+      mountPath: /scripts
+    - name: readiness-probe-volume
+      mountPath: /probe   
+    - name: mongodb-init-volume
+      mountPath: /docker-entrypoint-initdb.d
+      readOnly: true            
+    readinessProbe:
+      exec:
+        command: ['bash', '/probe/readiness.sh']
+      initialDelaySeconds: 10
+      periodSeconds: 5
+  volumes:
+  - name: repset-init-volume
+    configMap:
+      name: repset-init-configmap
+  - name: readiness-probe-volume
+    configMap:
+      name: readiness-probe-configmap      
+  - name: mongodb-init-volume
+    configMap:
+      name: mongo-init-configmap
+      items:
+        - key: mongo-init.js
+          path: mongo-init.js         

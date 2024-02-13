@@ -1,0 +1,184 @@
+global:
+  storageClass: &storageClass "hostpath"
+  # Helm should be created/upgraded using the same release namespace
+  defaultNamespace: &defaultNamespace "domivice-infra"
+  ingressClassName: &ingressClassName nginx
+  prometheusServerTlsSecretName: &prometheusServerTlsSecretName prometheus-server-tls
+  prometheusBaseURL: &prometheusBaseURL "prometheus.domivice.dev"
+  rabbitmqServiceName: &rabbitmqServiceName rabbitmq
+  rabbitmqUsername: &rabbitmqUsername domivice
+  rabbitmqPassword: &rabbitmqPassword domivice
+  uiHost: &identityServerUiHost auth.domivice.dev
+  bffHost: &identityServerBffHost bff.auth.domivice.dev
+  apiHost: &identityServerApiHost api.auth.domivice.dev
+  lokiServiceName: &lokiServiceName loki
+  harborCoreHost: &harborCoreHost core.harbor.domivice.dev
+  domiviceImageRegistry: *harborCoreHost
+  # This project should be created in harbor before
+  harborProject: domivice
+  # kubectl create secret docker-registry regcred --docker-server=<your-registry-server> --docker-username=<your-name> --docker-password=<your-pword> --docker-email=<your-email>
+  defaultHarborImagePullSecret: &defaultHarborImagePullSecret default-harbor-image-pull-secret
+cert-manager:
+  enabled: true
+  installCRDs: true
+  namespace: "cert-manager"
+  caSecretName: "domivice-ca-secret"
+  clusterIssuer: "domivice-cluster-issuer"
+namespaces:
+  enabled: true
+harbor:
+  enabled: true 
+  expose: 
+    tls:
+      certSource: secret
+      secret:
+        secretName: "core-harbor-domivice-dev-tls-secret"
+        notarySecretName: "notary-harbor-domivice-dev-tls-secret"
+    ingress:
+      hosts:
+        core: *harborCoreHost
+        notary: notary.harbor.domivice.dev
+      className: *ingressClassName
+  externalURL: https://core.harbor.domivice.dev     
+  persistence:
+    persistentVolumeClaim:
+      registry:
+        storageClass: *storageClass
+      jobservice:
+        jobLog:
+          storageClass: *storageClass
+      database:
+        storageClass: *storageClass
+      redis:
+        storageClass: *storageClass
+      trivy:
+        storageClass: *storageClass   
+ingress-nginx:
+  enabled: true  
+  tcp: 
+    1433: "domivice-dev/users-db-service:1433"
+    1434: "domivice-dev/identity-server-db-service:1433"
+    27017: "domivice-dev/mongodb:27017"
+    1435: "domivice-test/domivice-test-db-service:1433"
+    5672: "domivice-infra/rabbitmq:5672"
+    15672: "domivice-infra/rabbitmq:15672"
+rabbitmq:
+  enabled: true 
+  erlangSecretName: &rabbitMqErlangCookieSecret "rabbitmq-erlang-cookie-secret"
+  global:
+    storageClass: *storageClass
+  namespaceOverride: *defaultNamespace
+  servicenameOverride: *rabbitmqServiceName
+  nameOverride: &rabbitmqFullname "rabbitmq"
+  fullnameOverride: *rabbitmqFullname
+  auth:
+    username: *rabbitmqUsername
+    password: *rabbitmqPassword
+    existingErlangSecret: *rabbitMqErlangCookieSecret
+  extraPlugins: "rabbitmq_auth_backend_ldap rabbitmq_prometheus"
+  replicaCount: 1
+  persistence:
+    size: 1Gi
+  metrics:
+    enabled: true
+  serviceMonitor:
+    enabled: true
+    namespace: *defaultNamespace
+    jobLabel: "prometheus-rabbitmq"
+  prometheusRule:
+    enabled: false
+    namespace: ""
+kubernetes-dashboard:
+  enabled: true 
+  app:
+    ingress:
+      ingressClassName: *ingressClassName
+      hosts:
+        - kubernetes.domivice.dev
+      secretName: domivice-kubernetes-dashboard-cert-secret
+      issuer: 
+        name: noIssuer
+  cert-manager:
+    enabled: false
+    installCRDs: false
+  nginx:
+    enabled: false
+prometheus: 
+  enabled: true 
+  url: http://{{ include "prometheus.fullname" .}}:{{ .Values.prometheus.server.service.servicePort }}{{ .Values.prometheus.server.prefixURL }}
+  server:
+    persistentVolume:
+      storageClass: *storageClass
+    extraFlags:
+      - web.enable-lifecycle
+      - web.route-prefix=/
+      - web.external-url=https://prometheus.domivice.dev
+    ingress:
+      enabled: true
+      ingressClassName: *ingressClassName
+      hosts: [*prometheusBaseURL]
+      tls:
+        - secretName: *prometheusServerTlsSecretName
+          hosts:
+            - *prometheusBaseURL
+loki-stack:
+  enabled: true
+  loki:
+    fullnameOverride: *lokiServiceName
+    persistence:
+      enabled: true
+      size: 1Gi
+      storageClassName: *storageClass
+    ingress:
+      enabled: true
+      ingressClassName: *ingressClassName
+      ingressHostName: &lokiIngressHostName loki.domivice.dev
+      tlsSecretName: &lokiTlsSecretName loki-domivice-dev-tls-secret
+      hosts:
+        - host: *lokiIngressHostName
+          paths:
+            - /
+      tls: 
+      - secretName: *lokiTlsSecretName
+        hosts:
+          - *lokiIngressHostName
+  grafana:
+    enabled: true  
+    sidecar:
+      datasources:
+        label: "grafana_datasource"
+        labelValue: "1"
+        enabled: true
+        maxLines: 1000    
+    persistence:
+      enabled: true
+      size: 1Gi
+      storageClassName: *storageClass
+    adminPassword: domivice 
+    ingress:
+      enabled: true
+      ingressClassName: *ingressClassName
+      ingressHostName: &grafanaIngressHostName grafana.domivice.dev
+      tlsSecretName: &grafanaTlsSecretName grafana-domivice-dev-tls-secret
+      hosts:
+        - *grafanaIngressHostName
+      tls: 
+      - secretName: *grafanaTlsSecretName
+        hosts:
+          - *grafanaIngressHostName
+sonarqube:
+  enabled: true
+  ingress:
+    enabled: true
+    ingressClassName: *ingressClassName
+    ingressHostName: &sonarqubeIngressHostName sonarqube.domivice.dev
+    tlsSecretName: &sonarqubeTlsSecretName sonarqube-domivice-dev-tls-secret
+    hosts:
+    - name: *sonarqubeIngressHostName
+    tls:
+    - secretName: *sonarqubeTlsSecretName
+      hosts:
+      - *sonarqubeIngressHostName
+  postgresql:
+    persistence:
+      storageClass: *storageClass

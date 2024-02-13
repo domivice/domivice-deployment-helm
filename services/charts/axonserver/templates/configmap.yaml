@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: axonserver-properties
+  namespace: {{ .Values.global.defaultNamespace }}
+data:
+  axonserver.properties: |
+    axoniq.axonserver.accesscontrol.enabled=true
+    axoniq.axonserver.standalone=true
+    axoniq.axonserver.accesscontrol.token=domivice

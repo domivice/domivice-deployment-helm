@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: axonserver-grpc
+  namespace: {{ .Values.global.defaultNamespace }}
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/affinity: cookie
+    nginx.ingress.kubernetes.io/affinity-mode: persistent
+    nginx.ingress.kubernetes.io/grpc-backend: "true"
+spec:
+  ingressClassName: {{ .Values.global.ingressClassName }}
+  tls:
+  - hosts:
+    - {{ .Values.ingress.serverHostName }}
+    secretName: {{ .Values.ingress.serverTlsSecretName }}
+  rules:
+  - host: {{ .Values.ingress.serverHostName }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: axonserver
+            port:
+              number: 8124              

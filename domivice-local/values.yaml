@@ -1,0 +1,20 @@
+global:
+  storageClass: hostpath
+  # Helm should be created/upgraded using the same release namespace
+  defaultNamespace: domivice-local
+  dbServiceName: domivice-test-db-service
+  clusterIssuer: domivice-cluster-issuer
+  ingressClassName: nginx  
+azuresql:
+  enabled: true
+  secretName: domivice-test-db-secret
+  containerPort: 1433  
+axonserver: 
+  enabled: true
+  ingress:
+    dashboardHostName: axon.dashboard.domivice.local
+    dashboardTlsSecretName: axon-dashboard-domivice-local-tls-secret
+    serverHostName: axon.domivice.local
+    serverTlsSecretName: axon-server-domivice-local-tls-secret
+  token: |-
+    domivice  

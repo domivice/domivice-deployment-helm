@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity-server-api-deployment
+  namespace: {{ .Values.global.defaultNamespace }}
+  labels:
+    app: identity-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: identity-server
+  template:
+    metadata:
+      labels:
+        app: identity-server
+    spec:
+      initContainers:
+      - name: identity-server-migration
+        image: {{ .Values.global.domiviceImageRegistry }}/{{ .Values.migrationImageRepository }}:{{ .Values.migrationImageTag }}
+        command: ['/bin/bash', '-c', '/opt/mssql-tools/bin/sqlcmd -S {{ .Values.global.dbServiceName }} -U sa -P $$MSSQL_SA_PASSWORD -i /sql/InitialMigration.sql; wait;']
+        env:
+        - name: MSSQL_DATABASE
+          value: DomiviceIdentity
+        - name: MSSQL_SA_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secretName }}
+              key: MSSQL_SA_PASSWORD
+      imagePullSecrets:
+      - name: {{ .Values.global.defaultHarborImagePullSecret }}
+      containers:
+      - name: identity-server
+        image: {{ .Values.global.domiviceImageRegistry }}/{{ .Values.apiImageRepository }}:{{ .Values.apiImageTag }}
+        ports:
+        - containerPort: 5007
+        - containerPort: 5006
+        env:
+        - name: ConnectionStrings__DefaultConnection
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secretName }}
+              key: IDENTITY_SERVER_DB_CS
+        - name: Email__SendGridApiKey
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secretName }}
+              key: SENDGRID_API_KEY    
+        - name: Twilio__Client__AccountSid
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secretName }}
+              key: TWILIO_ACCOUNT_SID       
+        - name: Twilio__Client__AuthToken
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secretName }}
+              key: TWILIO_AUTH_TOKEN                                   
+        - name: RabbitMq__Host 
+          value: amqp://{{ .Values.global.rabbitmqUsername }}:{{ .Values.global.rabbitmqPassword }}@{{ .Values.global.rabbitmqServiceName }}.{{ .Values.global.infraNamespace }}.svc.cluster.local:5672
+        - name: Loki 
+          value: "http://{{ .Values.global.lokiServiceName }}.{{ .Values.global.infraNamespace }}.svc.cluster.local:3100"  
+        - name: IdentityServer__LoginUrl 
+          value: https://{{ .Values.global.uiHost }}/#/login  
+        - name: IdentityServer__ClientBaseUrls__DomiviceBff 
+          value: https://{{ .Values.global.bffHost }}
+        - name: IdentityServer__UiOrigin 
+          value: https://{{ .Values.global.uiHost }}
+      imagePullSecrets:
+      - name: {{ .Values.global.defaultHarborImagePullSecret }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.serviceName }}
+  namespace: {{ .Values.global.defaultNamespace }}
+  annotations:
+    prometheus.io/scrape: "true"
+spec:
+  ports:
+  - protocol: TCP
+    name: non-ssl-port
+    port: 80
+    targetPort: 5006
+  - protocol: TCP
+    name: ssl-port
+    port: 443
+    targetPort: 5007
+  selector:
+    app: identity-server

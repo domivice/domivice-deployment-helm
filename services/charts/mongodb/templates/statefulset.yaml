@@ -1,0 +1,118 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo
+  namespace: {{ .Values.global.defaultNamespace }}
+spec:
+  selector:
+    matchLabels:
+      app: mongo
+  serviceName: {{ .Values.serviceName }}
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:latest
+          startupProbe:
+            exec:
+              command:
+                - bin/mongosh
+                - --eval
+                - "db.adminCommand('ping')"
+            initialDelaySeconds: 1
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 2
+          livenessProbe:
+            exec:
+              command:
+                - bin/mongosh
+                - --eval
+                - "db.adminCommand('ping')"
+            initialDelaySeconds: 1
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 2
+          readinessProbe:
+            exec:
+              command:
+                - bin/mongosh
+                - --eval
+                - "db.adminCommand('ping')"
+            initialDelaySeconds: 1
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 2
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  key: root_username
+                  name: mongodb-conf-configmap
+            - name: DOMIVICE_SERVICES_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  key: services_username
+                  name: mongodb-conf-configmap                  
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: root_password
+                  name: mongodb-password-secret
+            - name: DOMIVICE_SERVICES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: services_password
+                  name: mongodb-password-secret                  
+            - name: MONGO_INITDB_DATABASE
+              value: {{ .Values.initDatabase }}  
+            - name: MONGO_UUID_REPRESENTATION
+              value: standard                               
+          command:
+            - mongod
+            - "--bind_ip_all"
+            - --config=/etc/mongo/mongodb.conf
+          volumeMounts:
+            - name: mongodb-data-volume
+              mountPath: /data/db
+            - name: mongodb-conf-volume
+              mountPath: /etc/mongo
+            - name: mongodb-keyfile-volume
+              mountPath: /etc/mongodb-keyfile
+              readOnly: true
+            - name: mongodb-init-volume
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true              
+      volumes:
+        - name: mongodb-conf-volume
+          configMap:
+            name: mongodb-conf-configmap
+            items:
+              - key: mongodb.conf
+                path: mongodb.conf
+        - name: mongodb-keyfile-volume
+          secret:
+            secretName: mongodb-keyfile-secret
+            defaultMode: 0400
+        - name: mongodb-init-volume
+          configMap:
+            name: mongo-init-configmap
+            items:
+              - key: mongo-init.js
+                path: mongo-init.js            
+  volumeClaimTemplates:
+    - metadata:
+        name: mongodb-data-volume
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.global.storageClass }}
+        resources:
+          requests:
+            storage: {{ .Values.storageSize }}

@@ -1,0 +1,22 @@
+global:
+  defaultNamespace: &defaultNamespace domivice-dev
+  storageClass: &storageClass hostpath
+  ingressClassName: nginx
+  clusterIssuer: domivice-cluster-issuer
+axonserver: 
+  enabled: true
+  ingress:
+    dashboardHostName: axon.dashboard.domivice.dev
+    dashboardTlsSecretName: axon-dashboard-domivice-dev-tls-secret
+    serverHostName: axon.domivice.dev
+    serverTlsSecretName: axon-server-domivice-dev-tls-secret
+  token: |-
+    domivice  
+mongodb: 
+  enable: true
+  replicaCount: 3
+  serviceName: "mongodb"
+  mongoPort: 27017
+  storageSize: 1Gi
+  replSetName: mongo-services
+  initDatabase: services

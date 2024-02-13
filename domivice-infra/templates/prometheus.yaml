@@ -1,0 +1,34 @@
+{{ if .Capabilities.APIVersions.Has "cert-manager.io/v1" -}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: domivice-prometheus-server-tls-cert
+  namespace: {{ .Release.Namespace }}
+spec:
+  dnsNames: 
+    - {{ .Values.global.prometheusBaseURL }}
+  secretName: {{ .Values.global.prometheusServerTlsSecretName }}
+  issuerRef:
+    name: {{ index .Values "cert-manager" "clusterIssuer" }}
+    kind: ClusterIssuer
+{{ end -}}  
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: domivice-prometheus-grafana-datasources
+  namespace: {{ .Release.Namespace }}
+  labels:
+    grafana_datasource: "1"
+data:
+  prometheus-datasource.yaml: |-
+    apiVersion: 1
+    datasources:
+{{- if .Values.prometheus.enabled }}
+    - name: Prometheus
+      type: prometheus
+      access: proxy
+      url: {{ tpl .Values.prometheus.url . | quote }}
+      version: 1
+      isDefault: {{ default false .Values.prometheus.isDefault }}
+{{- end }}

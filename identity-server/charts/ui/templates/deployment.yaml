@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity-server-ui-deployment
+  namespace: {{ .Values.global.defaultNamespace }}
+  labels:
+    app: identity-server-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: identity-server-ui
+  template:
+    metadata:
+      labels:
+        app: identity-server-ui
+    spec:
+      containers:
+      - name: identity-server-ui
+        image: {{ .Values.global.domiviceImageRegistry }}/{{ .Values.uiImageRepository }}:{{ .Values.uiImageTag }}
+        ports:
+        - containerPort: 80  
+      imagePullSecrets:
+      - name: {{ .Values.global.defaultHarborImagePullSecret }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: identity-server-ui-service
+  namespace: {{ .Values.global.defaultNamespace }}
+  annotations:
+    prometheus.io/scrape: "true"
+spec:
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  selector:
+    app: identity-server-ui

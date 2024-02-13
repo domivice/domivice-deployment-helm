@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: auth-domivice-dev-cert
+  namespace: {{ .Values.global.defaultNamespace }}
+spec:
+  dnsNames:
+    - {{ .Values.global.uiHost }}
+  secretName: auth-domivice-dev-tls-secret
+  issuerRef:
+    name: domivice-cluster-issuer
+    kind: ClusterIssuer

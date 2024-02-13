@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity-server-bff-deployment
+  namespace: {{ .Values.global.defaultNamespace }}
+  labels:
+    app: identity-server-bff
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: identity-server-bff
+  template:
+    metadata:
+      labels:
+        app: identity-server-bff
+    spec:
+      containers:
+      - name: identity-server-bff
+        image: {{ .Values.global.domiviceImageRegistry }}/{{ .Values.bffImageRepository }}:{{ .Values.bffImageTag }}
+        ports:
+        - containerPort: 5002
+        - containerPort: 5003
+        env:
+        - name: IdentityServer__Authority 
+          value: https://{{ .Values.global.apiHost }}
+        - name: Loki 
+          value: "http://{{ .Values.global.lokiServiceName }}.{{ .Values.global.infraNamespace }}.svc.cluster.local:3100"  
+      imagePullSecrets:
+      - name: {{ .Values.global.defaultHarborImagePullSecret }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: identity-server-bff-service
+  namespace: {{ .Values.global.defaultNamespace }}
+  annotations:
+    prometheus.io/scrape: "true"
+spec:
+  ports:
+  - protocol: TCP
+    name: non-ssl-port
+    port: 80
+    targetPort: 5002
+  - protocol: TCP
+    name: ssl-port
+    port: 443
+    targetPort: 5003
+  selector:
+    app: identity-server-bff

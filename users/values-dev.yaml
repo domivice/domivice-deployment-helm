@@ -1,0 +1,28 @@
+global:
+  storageClass: hostpath
+  # Helm should be created/upgraded using the same release namespace
+  defaultNamespace: domivice-dev
+  infraNamespace: domivice-infra
+  ingressClassName: nginx
+  dbServiceName: users-db-service
+  rabbitmqServiceName: rabbitmq
+  rabbitmqUsername: domivice
+  rabbitmqPassword: domivice
+  identityServerHost: api.auth.domivice.dev
+  apiHost: api.domivice.dev
+  lokiServiceName: loki
+  domiviceImageRegistry: core.harbor.domivice.dev
+  # kubectl create secret docker-registry regcred --docker-server=<your-registry-server> --docker-username=<your-name> --docker-password=<your-pword> --docker-email=<your-email>
+  defaultHarborImagePullSecret: default-harbor-image-pull-secret
+db:
+  enabled: true
+  secretName: users-db-secret
+  containerPort: 1433  
+api: 
+  enabled: true
+  serviceName: users-api-service
+  secretName: users-api-secret
+  apiImageRepository: domivice/users.api
+  apiImageTag: 1.0.0
+  migrationImageRepository: domivice/users.migration
+  migrationImageTag: 1.0.0
