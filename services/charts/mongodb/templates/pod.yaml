@@ -7,10 +7,7 @@ spec:
   containers:
   - name: init-mongo
     image: mongo:latest
-    lifecycle:
-      postStart:
-        exec:
-          command: ['bash', '/scripts/replSetInit.sh']
+    command: ['bash', '/scripts/mongoInit.sh']
     env:
       - name: MONGO_INITDB_ROOT_USERNAME
         valueFrom:
@@ -35,28 +32,10 @@ spec:
       - name: MONGO_INITDB_DATABASE
         value: {{ .Values.initDatabase }}            
     volumeMounts:
-    - name: repset-init-volume
-      mountPath: /scripts
-    - name: readiness-probe-volume
-      mountPath: /probe   
-    - name: mongodb-init-volume
-      mountPath: /docker-entrypoint-initdb.d
-      readOnly: true            
-    readinessProbe:
-      exec:
-        command: ['bash', '/probe/readiness.sh']
-      initialDelaySeconds: 10
-      periodSeconds: 5
+    - name: mongo-init-volume
+      mountPath: /scripts         
+  restartPolicy: OnFailure
   volumes:
-  - name: repset-init-volume
+  - name: mongo-init-volume
     configMap:
-      name: repset-init-configmap
-  - name: readiness-probe-volume
-    configMap:
-      name: readiness-probe-configmap      
-  - name: mongodb-init-volume
-    configMap:
-      name: mongo-init-configmap
-      items:
-        - key: mongo-init.js
-          path: mongo-init.js         
+      name: mongo-init-configmap    

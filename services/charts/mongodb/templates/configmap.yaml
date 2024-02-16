@@ -19,92 +19,80 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: repset-init-configmap
-  namespace: {{ .Values.global.defaultNamespace }}
-data:
-  # replSetInit.sh: |
-  #   #!/bin/bash
-  #   mongo --host mongo-0.mongo.domivice-dev.svc.cluster.local:27017 <<EOF
-  #   rs.initiate({
-  #     _id: "rs0",
-  #     members: [
-  #       { _id: 0, host : "mongo-0.mongo.domivice-dev.svc.cluster.local:27017" },
-  #       { _id: 1, host : "mongo-1.mongo.domivice-dev.svc.cluster.local:27017" },
-  #       { _id: 2, host : "mongo-2.mongo.domivice-dev.svc.cluster.local:27017" }
-  #     ]
-  #   });
-  #   EOF
-  replSetInit.sh: |
-    #!/bin/bash
-    CONFIG="rs.initiate({ _id: \"{{ .Values.replSetName }}\", members: ["
-    for ((i=0; i<{{ .Values.replicaCount }}; i++)); do
-      CONFIG+=" { _id: $i, host: \"mongo-$i.{{ .Values.serviceName }}.{{ .Values.global.defaultNamespace }}.svc.cluster.local:{{ .Values.mongoPort }}\" },"
-    done
-    CONFIG="${CONFIG%,}"  # Remove trailing comma
-    CONFIG+=" ]});"
-
-    FIRST_HOST="mongo-0.{{ .Values.serviceName }}.{{ .Values.global.defaultNamespace }}.svc.cluster.local:{{ .Values.mongoPort }}"
-        
-    # Execute the rs.initiate command on the first host
-    mongosh --host $FIRST_HOST --eval "$CONFIG" --quiet
-
-    # Get the primary host from the first host
-    PRIMARY_HOST=$(mongosh --host $FIRST_HOST --eval "rs.isMaster().primary" --quiet | tr -d '"')
-
-    #echo "Primary host: $PRIMARY_HOST"
-
-    # Read the MongoDB init script from file
-    MONGO_INIT=$(cat /docker-entrypoint-initdb.d/mongo-init.js)
-
-    #echo "Mongo init script: $MONGO_INIT"
-
-    # Execute the MongoDB init script on the primary host
-    mongosh admin --host $PRIMARY_HOST --eval "$MONGO_INIT"
-
----
-apiVersion: v1
-kind: ConfigMap
-metadata: 
-  name: readiness-probe-configmap
-  namespace: {{ .Values.global.defaultNamespace }}
-data:
-  readiness.sh: |
-    #!/bin/bash
-    # Check MongoDB's status
-    bin/mongosh --eval "db.adminCommand('ping')" >/dev/null 2>&1
-    # Check the exit status of the mongo command
-    if [ $? -eq 0 ]; then
-      exit 0 # MongoDB is up and running
-    else
-      exit 1 # MongoDB is not running
-    fi
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
   name: mongo-init-configmap
   namespace: {{ .Values.global.defaultNamespace }}
 data:
-  mongo-init.js: |
-    const rootUserName = process.env.MONGO_INITDB_ROOT_USERNAME;
-    const rootPassword = process.env.MONGO_INITDB_ROOT_PASSWORD;    
-    
-    db.createUser({
-      user: rootUserName,
-      pwd: rootPassword,
-      roles: [
-        { role: "root", db: "admin" }
-      ]
-    });
+  mongoInit.sh: |
+    #!/bin/bash
+    rs_init_command(){
+      local command="rs.initiate({ _id: \"{{ .Values.replSetName }}\", members: ["
+      for ((i=0; i<{{ .Values.replicaCount }}; i++)); do
+        command+=" { _id: $i, host: \"mongo-$i.{{ .Values.serviceName }}.{{ .Values.global.defaultNamespace }}.svc.cluster.local:{{ .Values.mongoPort }}\" },"
+      done
+      command="${command%,}"  # Remove trailing comma
+      command+=" ]});"
+      echo "$command"
+    }
+    ensure_hosts_are_running(){
+      for ((i=0; i<{{ .Values.replicaCount }}; i++)); do
+        local host="mongo-$i.{{ .Values.serviceName }}.{{ .Values.global.defaultNamespace }}.svc.cluster.local:{{ .Values.mongoPort }}"
+        until mongosh --host $host --quiet --eval "db" &>/dev/null; do
+          echo "Waiting for $host to start..."
+          sleep 2
+        done
+        echo "$host is running..."
+      done
 
-    const servicesUserName = process.env.DOMIVICE_SERVICES_USERNAME;
-    const servicesPassword = process.env.DOMIVICE_SERVICES_PASSWORD;    
-    
-    db.createUser({
-      user: servicesUserName,
-      pwd: servicesPassword,
-      roles: [
-        { role: "readWrite", db: "{{ .Values.initDatabase }}" }
-      ]
-    });    
+    }
+    run_rs_init_command(){
+      local host=$1
+      local command=$2
 
+      echo "Running the rs.initiate command on $host..."
+      mongosh --host $host --eval "$command" --quiet
+      echo "Replica set initialized."
+
+      until mongosh --host $host --quiet --eval "print(rs.isMaster().ismaster)" | grep -q "true"; do
+        echo "Waiting for primary host to be elected..."
+        sleep 2
+      done
+      echo "Primary host elected."
+    }
+    create_users_command(){
+      local command=$(cat <<EOF
+        db.createUser({
+          user: "$MONGO_INITDB_ROOT_USERNAME",
+          pwd: "$MONGO_INITDB_ROOT_PASSWORD",
+          roles: [
+            { role: "root", db: "admin" }
+          ]
+        });
+        db.createUser({
+          user: "$DOMIVICE_SERVICES_USERNAME",
+          pwd: "$DOMIVICE_SERVICES_PASSWORD",
+          roles: [
+            { role: "readWrite", db: "$MONGO_INITDB_DATABASE" }
+          ]
+        }); 
+    EOF
+      )
+      echo "$command"
+    }
+    run_create_users_command(){
+      local host=$1
+      local command=$2
+
+      echo "Running the db.createUser command on $host..."
+      mongosh admin --host $host --eval "$command" --quiet
+      echo "Users created"
+    }
+
+    FIRST_HOST="mongo-0.{{ .Values.serviceName }}.{{ .Values.global.defaultNamespace }}.svc.cluster.local:{{ .Values.mongoPort }}"
+    ensure_hosts_are_running
+
+    RS_INIT_COMMAND=$(rs_init_command)
+    run_rs_init_command "$FIRST_HOST" "$RS_INIT_COMMAND"
+
+    PRIMARY_HOST=$(mongosh --host $FIRST_HOST --eval "rs.isMaster().primary" --quiet | tr -d '"')
+    CREATE_USERS_COMMAND=$(create_users_command)
+    run_create_users_command "$PRIMARY_HOST" "$CREATE_USERS_COMMAND"
