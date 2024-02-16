@@ -12,9 +12,14 @@ data:
       dbPath: /data/db
     replication:
       replSetName: {{ .Values.replSetName }}
-    # security:
-    #   authorization: disabled
-    #   keyFile: /etc/mongodb-keyfile/key
+  auth.mongodb.conf: |
+    storage:
+      dbPath: /data/db
+    replication:
+      replSetName: {{ .Values.replSetName }}
+    security:
+      authorization: disabled
+      keyFile: /etc/mongodb-keyfile/key    
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -52,7 +57,7 @@ data:
       mongosh --host $host --eval "$command" --quiet
       echo "Replica set initialized."
 
-      until mongosh --host $host --quiet --eval "print(rs.isMaster().ismaster)" | grep -q "true"; do
+      until mongosh --host $host --quiet --eval "print(rs.status().ok)" | grep -q "1"; do
         echo "Waiting for primary host to be elected..."
         sleep 2
       done

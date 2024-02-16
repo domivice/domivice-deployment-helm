@@ -20,3 +20,4 @@ mongodb:
   storageSize: 1Gi
   replSetName: mongo-services
   initDatabase: services
+  mongoInit: false

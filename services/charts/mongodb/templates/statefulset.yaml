@@ -58,7 +58,7 @@ spec:
           command:
             - mongod
             - "--bind_ip_all"
-            - --config=/etc/mongo/mongodb.conf
+            - {{ if .Values.mongoInit }}"--config=/etc/mongo/mongodb.conf"{{ else }}"--config=/etc/mongo/auth.mongodb.conf"{{ end }}
           volumeMounts:
             - name: mongodb-data-volume
               mountPath: /data/db
@@ -66,14 +66,19 @@ spec:
               mountPath: /etc/mongo
             - name: mongodb-keyfile-volume
               mountPath: /etc/mongodb-keyfile
-              readOnly: true          
+              readOnly: true                  
       volumes:
         - name: mongodb-conf-volume
           configMap:
             name: mongodb-conf-configmap
             items:
+            {{ if .Values.mongoInit }}
               - key: mongodb.conf
                 path: mongodb.conf
+            {{ else }}
+              - key: auth.mongodb.conf
+                path: auth.mongodb.conf    
+            {{ end }}           
         - name: mongodb-keyfile-volume
           secret:
             secretName: mongodb-keyfile-secret
