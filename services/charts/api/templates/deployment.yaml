@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: services-api-deployment
+  namespace: {{ .Values.global.defaultNamespace }}
+  labels:
+    app: services-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: services-api
+  template:
+    metadata:
+      labels:
+        app: services-api
+    spec:
+      containers:
+      - name: services-api
+        image: {{ .Values.global.domiviceImageRegistry }}/{{ .Values.apiImageRepository }}:{{ .Values.apiImageTag }}
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SPRING_DATA_MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secretName }}
+              key: MONGO_URI
+        - name: AXON_MONGO_TOKEN_STORE_ENABLED 
+          value: 'true'
+        - name: AXON_MONGO_EVENT_STORE_ENABLED 
+          value: 'true'     
+        - name: AXON_AXONSERVER_SERVERS
+          value: 'axonserver:8124'
+        - name: AXON_AXONSERVER_TOKEN  
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secretName }}
+              key: AXON_TOKEN
+        - name: USE_SYSTEM_CA_CERTS  
+          value: '1'          
+      imagePullSecrets:
+      - name: {{ .Values.global.defaultHarborImagePullSecret }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.serviceName }}
+  namespace: {{ .Values.global.defaultNamespace }}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/actuator/metrics"
+spec:
+  ports:
+  - protocol: TCP
+    name: non-ssl-port
+    port: 80
+    targetPort: 8080
+  selector:
+    app: services-api

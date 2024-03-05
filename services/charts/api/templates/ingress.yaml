@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: services-api-ingress
+  namespace: {{ .Values.global.defaultNamespace }}
+  # annotations:
+  #   nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+spec:
+  ingressClassName: {{ .Values.global.ingressClassName }}
+  tls:
+  - hosts:
+    - {{ .Values.apiHost }}
+    secretName: api-domivice-dev-tls-secret
+  rules:
+  - host: {{ .Values.apiHost }}
+    http:
+      paths:
+      - path: /services/v1
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.serviceName }}
+            port:
+              number: 80
+      - path: /openapi/services
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.serviceName }}
+            port:
+              number: 80              

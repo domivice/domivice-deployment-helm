@@ -7,4 +7,3 @@ data:
   axonserver.properties: |
     axoniq.axonserver.accesscontrol.enabled=true
     axoniq.axonserver.standalone=true
-    axoniq.axonserver.accesscontrol.token=domivice

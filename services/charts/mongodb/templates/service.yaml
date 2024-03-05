@@ -1,0 +1,17 @@
+{{ $replicaCount := .Values.replicaCount | int }}
+{{- range $index, $element := until $replicaCount }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $.Values.serviceName }}-{{ $index }}
+  namespace: {{ $.Values.global.defaultNamespace }}
+spec:
+  selector:
+    app: mongo
+    statefulset.kubernetes.io/pod-name: mongo-{{ $index }}
+  ports:
+  - protocol: TCP
+    port: {{ $.Values.mongoPort }}
+    targetPort: {{ $.Values.mongoPort }}
+---
+{{- end }}

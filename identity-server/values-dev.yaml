@@ -24,7 +24,7 @@ api:
   serviceName: identity-server-api-service
   secretName: identity-server-api-secret
   apiImageRepository: domivice/identityprovider.api
-  apiImageTag: 1.0.2
+  apiImageTag: 1.0.0
   migrationImageRepository: domivice/identityprovider.migration
   migrationImageTag: 1.0.0
 ui: 

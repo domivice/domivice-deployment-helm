@@ -1,5 +1,5 @@
 apiVersion: v2
-name: services
+name: api
 description: A Helm chart for Kubernetes
 
 # A chart can be either an 'application' or a 'library' chart.
@@ -22,19 +22,3 @@ version: 0.1.0
 # follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
 appVersion: "1.16.0"
-
-dependencies:
-  - name: axonserver
-    version: "0.1.0"
-    repository: "file://charts/axonserver"
-    condition: axonserver.enabled  
-# helm repo add bitnami https://charts.bitnami.com/bitnami
-# helm fetch bitnami/mongodb --untar      
-  - name: mongodb
-    version: " 0.1.0"
-    repository: "file://charts/mongodb"
-    condition: mongodb.enabled        
-  - name: api
-    version: " 0.1.0"
-    repository: "file://charts/api"
-    condition: api.enabled  

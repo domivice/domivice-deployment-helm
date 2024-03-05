@@ -3,6 +3,8 @@ global:
   storageClass: &storageClass hostpath
   ingressClassName: nginx
   clusterIssuer: domivice-cluster-issuer
+  domiviceImageRegistry: core.harbor.domivice.dev
+  defaultHarborImagePullSecret: default-harbor-image-pull-secret
 axonserver: 
   enabled: true
   ingress:
@@ -10,8 +12,6 @@ axonserver:
     dashboardTlsSecretName: axon-dashboard-domivice-dev-tls-secret
     serverHostName: axon.domivice.dev
     serverTlsSecretName: axon-server-domivice-dev-tls-secret
-  token: |-
-    domivice  
 mongodb: 
   enable: true
   replicaCount: 3
@@ -21,3 +21,10 @@ mongodb:
   replSetName: mongo-services
   initDatabase: services
   mongoInit: false
+api: 
+  enabled: true
+  serviceName: services-api-service
+  secretName: services-api-secret
+  apiImageRepository: domivice/services.api
+  apiImageTag: 1.0.0
+  apiHost: api.domivice.dev

@@ -58,7 +58,6 @@ ingress-nginx:
   tcp: 
     1433: "domivice-dev/users-db-service:1433"
     1434: "domivice-dev/identity-server-db-service:1433"
-    27017: "domivice-dev/mongodb:27017"
     1435: "domivice-test/domivice-test-db-service:1433"
     5672: "domivice-infra/rabbitmq:5672"
     15672: "domivice-infra/rabbitmq:15672"

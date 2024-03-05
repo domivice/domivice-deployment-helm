@@ -4,4 +4,4 @@ mongoPort: 27017
 storageSize: 1Gi
 replSetName: mongo-services
 initDatabase: services
-mongoInit: true
+mongoInit: false
