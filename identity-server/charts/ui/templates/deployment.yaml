@@ -29,7 +29,7 @@ metadata:
   name: identity-server-ui-service
   namespace: {{ .Values.global.defaultNamespace }}
   annotations:
-    prometheus.io/scrape: "true"
+    prometheus.io/scrape: "false"
 spec:
   ports:
   - protocol: TCP

@@ -57,6 +57,7 @@ metadata:
   namespace: {{ .Values.global.defaultNamespace }}
   annotations:
     prometheus.io/scrape: "true"
+    prometheus.io/port: "5004"
 spec:
   ports:
   - protocol: TCP

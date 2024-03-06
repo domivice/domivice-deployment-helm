@@ -26,5 +26,5 @@ api:
   serviceName: services-api-service
   secretName: services-api-secret
   apiImageRepository: domivice/services.api
-  apiImageTag: 1.0.0
+  apiImageTag: 1.0.1
   apiHost: api.domivice.dev

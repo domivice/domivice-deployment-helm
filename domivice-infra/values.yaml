@@ -108,6 +108,7 @@ prometheus:
   server:
     persistentVolume:
       storageClass: *storageClass
+      size: 5Gi
     extraFlags:
       - web.enable-lifecycle
       - web.route-prefix=/
@@ -141,6 +142,8 @@ loki-stack:
       - secretName: *lokiTlsSecretName
         hosts:
           - *lokiIngressHostName
+    podAnnotations:
+      prometheus.io/port: "3100"
   grafana:
     enabled: true  
     sidecar:
@@ -181,3 +184,4 @@ sonarqube:
   postgresql:
     persistence:
       storageClass: *storageClass
+      size: 1Gi
